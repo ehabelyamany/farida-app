@@ -24,14 +24,18 @@ export class SheetsService {
 
   private saveLocalEmployee(emp: Employee) {
     const current = this.getLocalEmployees();
-    const updated = [...current.filter(e => e.id !== emp.id), emp];
+    // Filter out if exists and push new
+    const filtered = current.filter(e => e.id !== emp.id);
+    const updated = [...filtered, emp];
     localStorage.setItem('local_employees', JSON.stringify(updated));
+    console.log("فريدة: تم حفظ الموظف محلياً لتسريع الواجهة", emp.name);
   }
 
   async fetchEmployees(): Promise<Employee[]> {
     const localEmps = this.getLocalEmployees();
     
     if (!this.isConfigured() || !this.apiKey) {
+      console.log("فريدة: النظام غير مهيأ، يتم استخدام البيانات المحلية فقط.");
       return localEmps;
     }
     
@@ -44,20 +48,26 @@ export class SheetsService {
       if (!data.values) return localEmps;
       
       const cloudEmps = data.values.map((row: any[]) => ({
-        id: row[0] || Math.random().toString(36).substr(2, 9),
+        id: row[0] || `ID-${Math.random().toString(36).substr(2, 5)}`,
         name: row[1] || 'غير معروف',
         position: row[2] || '-',
         baseSalary: parseFloat(row[3]) || 0,
         joinDate: row[4] || new Date().toLocaleDateString()
       }));
 
-      // Merge Cloud + Local, prioritizing Cloud IDs but keeping unique local ones
+      // Merge Cloud + Local
       const cloudIds = new Set(cloudEmps.map((e: Employee) => e.id));
       const uniqueLocal = localEmps.filter(e => !cloudIds.has(e.id));
       
-      return [...cloudEmps, ...uniqueLocal];
+      const final = [...cloudEmps, ...uniqueLocal];
+      // Keep local in sync with cloud if cloud is more updated
+      if (cloudEmps.length > 0) {
+        // Option: we could update local storage here too
+      }
+      
+      return final;
     } catch (error) {
-      console.error('فريدة: فشل جلب الموظفين، نستخدم البيانات المحلية -', error);
+      console.error('فريدة: فشل جلب الموظفين سحابياً، نستخدم النسخة المحلية -', error);
       return localEmps;
     }
   }
@@ -88,23 +98,29 @@ export class SheetsService {
   }
 
   async sendToCloud(range: string, values: any[][]) {
-    if (!this.isConfigured()) return false;
+    if (!this.isConfigured()) {
+      console.warn("فريدة: لا يمكن الإرسال للسحابة، النظام غير مهيأ.");
+      return false;
+    }
 
-    // Send to Google Proxy
     if (this.proxyUrl) {
       try {
+        // mode: no-cors is essential for Apps Script unless you have complex setup
         await fetch(this.proxyUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ range, values })
         });
+        console.log("فريدة: تم إرسال طلب الكتابة للجسر السحابي بنجاح.");
+        return true;
       } catch (err) {
-        console.error("Proxy error:", err);
+        console.error("فريدة: خطأ في جسر الكتابة -", err);
+        return false;
       }
     }
 
-    console.log("فريدة: تم تسجيل البيانات سحابياً (Proxy Mode)");
+    console.warn("فريدة: لا يوجد رابط Proxy. البيانات ستفقد عند تحديث الصفحة إذا لم تكن في Cloud.");
     return true; 
   }
 
