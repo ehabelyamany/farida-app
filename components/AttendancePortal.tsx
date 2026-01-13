@@ -1,8 +1,16 @@
 
 import React from 'react';
 import { LogIn, LogOut, Coffee, MapPin } from 'lucide-react';
+// Added Employee import
+import { Employee } from '../types';
 
-const AttendancePortal: React.FC = () => {
+// Define props interface for AttendancePortal
+interface AttendancePortalProps {
+  employees: Employee[];
+}
+
+// Updated component to accept employees prop to match Route usage in App.tsx
+const AttendancePortal: React.FC<AttendancePortalProps> = ({ employees }) => {
   const currentTime = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
   const currentDate = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 

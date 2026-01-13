@@ -15,8 +15,8 @@ import { AppSettings, Employee, AttendanceRecord } from './types';
 import { SheetsService } from './services/sheetsService';
 import { CloudSync, ShieldCheck } from 'lucide-react';
 
-// Destructure from Router cast as any to fix the "no exported member" errors in restrictive TS environments.
-const { BrowserRouter, Routes, Route, Navigate } = Router as any;
+// Use HashRouter for static hosting (Vercel/GitHub Pages) to avoid 404s on refresh
+const { HashRouter, Routes, Route, Navigate } = Router as any;
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -39,7 +39,7 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("فشل في المزامنة التلقائية");
     } finally {
-      // Added artificial delay for smooth transition and showing off the UI
+      // Small delay for UI smoothness
       setTimeout(() => setIsSyncing(false), 1500);
     }
   };
@@ -61,7 +61,7 @@ const App: React.FC = () => {
 
   if (isSyncing) {
     return (
-      <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center p-10">
+      <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center p-10 text-right">
         <div className="relative mb-10">
            <div className="w-32 h-32 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
            <CloudSync className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 animate-pulse" size={48} />
@@ -79,7 +79,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout settings={settings}>
         <Routes>
           <Route path="/" element={<Dashboard employees={data.employees} attendance={data.attendance} />} />
@@ -92,7 +92,7 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
