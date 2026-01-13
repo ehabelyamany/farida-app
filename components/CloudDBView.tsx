@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Database, Link2, ShieldCheck, CheckCircle2, AlertCircle, HelpCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { Database, Link2, ShieldCheck, CheckCircle2, AlertCircle, HelpCircle, Code, ExternalLink, RefreshCw } from 'lucide-react';
 import { CloudDBConfig } from '../types';
 
 interface CloudDBViewProps {
@@ -8,17 +8,19 @@ interface CloudDBViewProps {
 }
 
 const CloudDBView: React.FC<CloudDBViewProps> = ({ onSyncRequested }) => {
-  const [config, setConfig] = useState<CloudDBConfig>({
+  const [config, setConfig] = useState<any>({
     sheetId: localStorage.getItem('sheet_id') || '',
     apiKey: localStorage.getItem('sheets_api_key') || '',
+    proxyUrl: localStorage.getItem('proxy_url') || '',
     isConnected: !!localStorage.getItem('sheet_id')
   });
 
   const handleConnect = () => {
     localStorage.setItem('sheet_id', config.sheetId);
     localStorage.setItem('sheets_api_key', config.apiKey);
+    localStorage.setItem('proxy_url', config.proxyUrl);
     setConfig({ ...config, isConnected: true });
-    onSyncRequested(); // Global sync immediately
+    onSyncRequested(); 
   };
 
   return (
@@ -43,27 +45,36 @@ const CloudDBView: React.FC<CloudDBViewProps> = ({ onSyncRequested }) => {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-400 mr-2 flex items-center gap-2">
-                  معرف الجدول (Sheet ID)
-                  <HelpCircle size={14} className="text-slate-600 cursor-help" />
-                </label>
+                <label className="text-sm font-bold text-slate-400 mr-2">معرف الجدول (Sheet ID)</label>
                 <input 
                   type="text" 
                   value={config.sheetId}
                   onChange={(e) => setConfig({...config, sheetId: e.target.value})}
-                  placeholder="مثال: 1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
-                  className="w-full bg-black/50 border border-slate-800 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                  className="w-full bg-black/50 border border-slate-800 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-400 mr-2">مفتاح API (Google Cloud API Key)</label>
+                <label className="text-sm font-bold text-slate-400 mr-2">مفتاح API (للقراءة)</label>
                 <input 
                   type="password" 
                   value={config.apiKey}
                   onChange={(e) => setConfig({...config, apiKey: e.target.value})}
-                  placeholder="••••••••••••••••••••••••••••"
-                  className="w-full bg-black/50 border border-slate-800 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                  className="w-full bg-black/50 border border-slate-800 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-blue-400 mr-2 flex items-center gap-2">
+                  رابط جسر الكتابة (Google Apps Script Proxy)
+                  <span className="text-[10px] bg-blue-500/10 px-2 py-1 rounded text-blue-500">موصى به للكتابة</span>
+                </label>
+                <input 
+                  type="text" 
+                  value={config.proxyUrl}
+                  onChange={(e) => setConfig({...config, proxyUrl: e.target.value})}
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  className="w-full bg-black/50 border border-blue-900/30 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
                 />
               </div>
 
@@ -80,7 +91,13 @@ const CloudDBView: React.FC<CloudDBViewProps> = ({ onSyncRequested }) => {
 
         <div className="space-y-6">
           <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800">
-            <h3 className="font-bold text-white mb-6">حالة المزامنة</h3>
+            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+               <Code size={18} className="text-blue-400" />
+               تفعيل الكتابة
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+               لتمكين "فريدة" من تسجيل الحضور مباشرة في جدولك، يرجى إنشاء Google Apps Script بسيط يقوم بوظيفة <code>appendRow</code> وتفعيله كـ Web App.
+            </p>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-slate-800">
                 <span className="text-sm text-slate-400">حالة الاتصال</span>
@@ -94,13 +111,6 @@ const CloudDBView: React.FC<CloudDBViewProps> = ({ onSyncRequested }) => {
                   </span>
                 )}
               </div>
-              <button 
-                onClick={onSyncRequested}
-                className="w-full mt-2 flex items-center justify-center gap-2 py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition-colors"
-              >
-                <RefreshCw size={14} />
-                مزامنة يدوية الآن
-              </button>
             </div>
           </div>
         </div>

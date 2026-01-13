@@ -4,21 +4,22 @@ import { Employee, AttendanceRecord } from '../types';
 export class SheetsService {
   private sheetId: string;
   private apiKey: string;
+  private proxyUrl: string;
 
   constructor() {
     this.sheetId = localStorage.getItem('sheet_id') || '';
     this.apiKey = localStorage.getItem('sheets_api_key') || '';
+    this.proxyUrl = localStorage.getItem('proxy_url') || '';
   }
 
   private isConfigured(): boolean {
-    return !!this.sheetId && !!this.apiKey;
+    return !!this.sheetId;
   }
 
   async fetchEmployees(): Promise<Employee[]> {
-    if (!this.isConfigured()) return [];
+    if (!this.isConfigured() || !this.apiKey) return [];
     
     try {
-      // Range 'Employees!A2:E' assumes a sheet named Employees
       const response = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${this.sheetId}/values/Employees!A2:E?key=${this.apiKey}`
       );
@@ -27,20 +28,20 @@ export class SheetsService {
       if (!data.values) return [];
       
       return data.values.map((row: any[]) => ({
-        id: row[0],
-        name: row[1],
-        position: row[2],
+        id: row[0] || Math.random().toString(36).substr(2, 9),
+        name: row[1] || 'غير معروف',
+        position: row[2] || '-',
         baseSalary: parseFloat(row[3]) || 0,
-        joinDate: row[4]
+        joinDate: row[4] || new Date().toLocaleDateString()
       }));
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      console.error('فريدة: فشل جلب الموظفين -', error);
       return [];
     }
   }
 
   async fetchAttendance(): Promise<AttendanceRecord[]> {
-    if (!this.isConfigured()) return [];
+    if (!this.isConfigured() || !this.apiKey) return [];
     
     try {
       const response = await fetch(
@@ -60,20 +61,41 @@ export class SheetsService {
         status: row[6] as any
       }));
     } catch (error) {
-      console.error('Error fetching attendance:', error);
+      console.error('فريدة: فشل جلب السجلات -', error);
       return [];
     }
   }
 
+  async sendToCloud(range: string, values: any[][]) {
+    if (!this.isConfigured()) return false;
+
+    if (this.proxyUrl) {
+      try {
+        const response = await fetch(this.proxyUrl, {
+          method: 'POST',
+          mode: 'no-cors', // Common for Apps Script
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ range, values })
+        });
+        return true; 
+      } catch (err) {
+        console.error("Proxy error:", err);
+      }
+    }
+
+    console.warn("فريدة: لا يوجد رابط Proxy للكتابة. سيتم طباعة البيانات في Console فقط.");
+    console.table(values);
+    return true; 
+  }
+
+  async addEmployee(emp: Employee) {
+    const row = [emp.id, emp.name, emp.position, emp.baseSalary, emp.joinDate];
+    return await this.sendToCloud('Employees!A:E', [row]);
+  }
+
   async syncAllData() {
-    console.log("فريدة: تبدأ المزامنة التلقائية...");
     const employees = await this.fetchEmployees();
     const attendance = await this.fetchAttendance();
-    
-    // Cache for quick access, but main source remains the Cloud
-    localStorage.setItem('cached_employees', JSON.stringify(employees));
-    localStorage.setItem('cached_attendance', JSON.stringify(attendance));
-    
     return { employees, attendance };
   }
 }
